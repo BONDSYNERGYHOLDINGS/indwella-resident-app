@@ -1,0 +1,42 @@
+export const iconMap = {
+    user: require('../assets/icons/user.png'),
+    security: require('../assets/icons/security.png'),
+    checkP: require('../assets/icons/check_pentagon.png'),
+    arrowR: require('../assets/icons/Arrow_Right.png'),
+    arrowRFilled: require('../assets/icons/Arrow_Right_Filled.png'),
+    chevron_down: require('../assets/icons/Chevron_Down.png'),
+    userbgless: require('../assets/icons/user_bgless.png'),
+    bell: require('../assets/icons/Bell.png'),
+    hamburger: require('../assets/icons/hamburger.png'),
+    close: require('../assets/icons/close.png'),
+    pending: require('../assets/icons/pending.png'),
+    credit: require('../assets/icons/credit.png'),
+    eyeC: require('../assets/icons/eye_closed.png'),
+    eyeO: require('../assets/icons/eye_open.png'),
+    wallet: require('../assets/icons/wallet.png'),
+    dashboard: require('../assets/icons/dashboard.png'),
+    util: require('../assets/icons/util.png'),
+    visitor: require('../assets/icons/visitor.png'),
+    panic: require('../assets/icons/panic.png'),
+    report: require('../assets/icons/report.png'),
+    flash: require('../assets/icons/flash.png'),
+    calendarCheck: require('../assets/icons/calendarcheck.png'),
+    calendarDot: require('../assets/icons/calendardot.png'),
+    arrowRightBlock: require('../assets/icons/arrowRightBlock.png'),
+    addPlus: require('../assets/icons/addPlus.png'),
+    search: require('../assets/icons/search.png'),
+    circleAdd: require('../assets/icons/circle_add.png'),
+    arrowLLine: require('../assets/icons/arrow_left_line.png'),
+    phone: require('../assets/icons/phone.png'),
+    whatsapp: require('../assets/icons/whatsapp.png'),
+    messageFilled: require('../assets/icons/message.png'),
+    email: require('../assets/icons/email.png'),
+    logout:require('../assets/icons/logout.png'),
+    trash: require('../assets/icons/trash.png'),
+    success: require('../assets/icons/success.png'),
+} as const;
+
+
+
+
+export type IconName = keyof typeof iconMap;

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "989027280450",
+    "project_id": "indwella",
+    "storage_bucket": "indwella.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:989027280450:android:f965941b77d0b77c0befdb",
+        "android_client_info": {
+          "package_name": "com.indwella_client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDeAmfxwDeJ3cnyw8ywq3n8K3J8yRd7R9c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
