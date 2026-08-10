@@ -16,7 +16,7 @@ import { api } from '../../lib/apiClient';
 import AppSafeAreaView from '../../components/AppSafeAreaView';
 import Icon from '../../components/Icon';
 import { ResidentStackParamList } from '../../navigation/types';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 type NavigationProp = NativeStackNavigationProp<ResidentStackParamList>;
 

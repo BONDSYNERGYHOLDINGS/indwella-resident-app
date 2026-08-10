@@ -16,7 +16,7 @@ import AdCarousel from '../../components/AdCarousel';
 import FeatureNav from './FeatureNav';
 import { ResidentStackParamList, RootStackParamList } from '../../navigation/types';
 import { api } from '../../lib/apiClient';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 type ResidentHomeRouteProp = RouteProp<ResidentStackParamList, 'resident_home'>;
 

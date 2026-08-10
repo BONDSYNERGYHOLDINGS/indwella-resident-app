@@ -5,7 +5,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import AppStack from './AppStack';
 import ResidentStack from './ResidentStack';
 import ResidentDrawer from './ResidentDrawer';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Drawer = createDrawerNavigator();
 

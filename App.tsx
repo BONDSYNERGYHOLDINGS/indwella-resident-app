@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigation/RootNavigator';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 import { subscribeToForegroundPushMessages } from './src/services/pushNotifications';
 
 

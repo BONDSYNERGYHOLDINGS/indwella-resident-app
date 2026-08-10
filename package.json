@@ -14,8 +14,7 @@
     "generate:types": "openapi-typescript http://127.0.0.1:8000/openapi.json -o types/api.d.ts"
   },
   "dependencies": {
-    "@indwella/api-client": "1.0.0",
-    "@indwella/types": "1.0.0",
+    "@indwella/sdk": "file:../indwella-sdk",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "8.2.0",

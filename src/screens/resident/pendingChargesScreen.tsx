@@ -6,7 +6,7 @@ import { RootStackParamList } from "../../navigation/types";
 import { api } from "../../lib/apiClient";
 import AppSafeAreaView from "../../components/AppSafeAreaView";
 import Icon from "../../components/Icon";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 const parseAmount = (value: unknown) => {
   if (typeof value === "number") {

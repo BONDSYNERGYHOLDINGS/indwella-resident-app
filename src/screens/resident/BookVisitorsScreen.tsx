@@ -10,7 +10,7 @@ import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navig
 import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
 import PhoneContactPicker from '../../native/PhoneContactPicker';
 import { format, parseISO } from 'date-fns';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 
 type BookVisitorScreenProps = RouteProp<ResidentStackParamList, 'book_visitor'>

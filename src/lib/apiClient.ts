@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { API_BASE_URL } from '@env';
-import { createResidentSdk } from '@indwella/api-client';
+import { createResidentSdk } from '@indwella/sdk';
 import { residentTokenStorage } from './tokenStorage';
 
 const FALLBACK_API_URL = Platform.OS === 'android' ? 'http://10.0.2.2' : 'http://localhost';

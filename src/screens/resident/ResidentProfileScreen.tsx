@@ -18,7 +18,7 @@ import Icon from '../../components/Icon';
 import AppSafeAreaView from '../../components/AppSafeAreaView';
 import { api } from '../../lib/apiClient';
 import { ResidentStackParamList, RootStackParamList } from '../../navigation/types';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { pickImageAsset } from '../../services/imagePicker';
 
 type ResidentProfileNavigationProp = NativeStackNavigationProp<

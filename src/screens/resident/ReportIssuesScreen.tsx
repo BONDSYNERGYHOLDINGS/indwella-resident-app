@@ -17,7 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../lib/apiClient';
 import AppSafeAreaView from '../../components/AppSafeAreaView';
 import Icon from '../../components/Icon';

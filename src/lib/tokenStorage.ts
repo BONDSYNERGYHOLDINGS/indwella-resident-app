@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { TokenStorage } from '@indwella/api-client';
+import type { TokenStorage } from '@indwella/sdk';
 
 const ACCESS_KEY = 'resident_token';
 const REFRESH_KEY = 'resident_refresh_token';

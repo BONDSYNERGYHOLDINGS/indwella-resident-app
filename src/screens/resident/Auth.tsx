@@ -8,7 +8,7 @@ import { RootStackParamList } from '../../navigation/types';
 import {Picker} from '@react-native-picker/picker';
 import { api } from '../../lib/apiClient';
 import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getFcmToken } from '../../services/pushNotifications';
 
 

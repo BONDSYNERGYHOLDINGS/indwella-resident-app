@@ -1,3 +1,5 @@
+
+
 import { Alert, DeviceEventEmitter, Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import Icon from "./Icon";
@@ -5,7 +7,7 @@ import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { api } from "../lib/apiClient";
 
 type NavbarProps = {

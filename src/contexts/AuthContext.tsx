@@ -1,8 +1,8 @@
-// contexts/AuthContext.tsx
+// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api, authApi, setSessionExpiredHandler } from '../src/lib/apiClient';
-import { residentTokenStorage } from '../src/lib/tokenStorage';
-import { deleteFcmToken, getFcmToken } from '../src/services/pushNotifications';
+import { api, authApi, setSessionExpiredHandler } from '../lib/apiClient';
+import { residentTokenStorage } from '../lib/tokenStorage';
+import { deleteFcmToken, getFcmToken } from '../services/pushNotifications';
 
 type AuthContextType = {
   isAuthenticated: boolean;

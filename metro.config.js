@@ -5,26 +5,30 @@ const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
  * Metro configuration
  * https://reactnative.dev/docs/metro
  *
- * This app lives inside a yarn/npm workspaces monorepo (see the repo root
- * package.json) and depends on the sibling packages `@indwella/api-client`
- * and `@indwella/types`. Metro needs two extra things to resolve those:
- *   1. `watchFolders` - so Metro's file watcher also looks at the monorepo
- *      root (where `packages/*` lives), not just this app's own folder.
- *   2. `resolver.nodeModulesPaths` - so requiring `@indwella/*` resolves via
- *      the hoisted root `node_modules` as well as this app's own.
+ * This app is now an INDEPENDENT repository (it is no longer part of a
+ * yarn/npm-workspaces monorepo). Its only cross-repo dependency is the shared
+ * `@indwella/sdk`, installed via `file:../indwella-sdk`, which npm/yarn
+ * materialise as a symlink inside this app's own `node_modules`.
+ *
+ * Two things make Metro resolve that symlinked sibling package:
+ *   1. `resolver.unstable_enableSymlinks` - follow the node_modules symlink to
+ *      the SDK's real location instead of treating it as a dead link.
+ *   2. `watchFolders` - include the SDK's real path so Metro's watcher/bundler
+ *      is allowed to read files that live outside this project's root.
+ *
+ * The SDK ships a compiled build (`dist/`, CommonJS), so Metro simply bundles
+ * its JS - no extra transform config is required.
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const workspaceRoot = path.resolve(__dirname, '../..');
 const projectRoot = __dirname;
+const sdkRoot = path.resolve(projectRoot, '../indwella-sdk');
 
 const config = {
-  watchFolders: [workspaceRoot],
+  watchFolders: [sdkRoot],
   resolver: {
-    nodeModulesPaths: [
-      path.resolve(projectRoot, 'node_modules'),
-      path.resolve(workspaceRoot, 'node_modules'),
-    ],
+    unstable_enableSymlinks: true,
+    nodeModulesPaths: [path.resolve(projectRoot, 'node_modules')],
     disableHierarchicalLookup: false,
     extraNodeModules: {
       http: require.resolve('stream-http'),
