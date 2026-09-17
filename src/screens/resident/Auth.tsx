@@ -1,4 +1,4 @@
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import React from 'react';
 // Import custom components and utilities
 import Icon from '../../components/Icon';
@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import {Picker} from '@react-native-picker/picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../lib/apiClient';
 import CountryPicker, { Country, CountryCode } from 'react-native-country-picker-modal';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,6 +24,13 @@ const AuthResident = () => {
   const [phone, setPhone] = React.useState(''); // User's phone number
   const [estates, setEstates] = React.useState([]); // User's estate name
   const [selectedEstate, setSelectedEstate] = React.useState('');
+  // Tracked separately from `estates.length` so a failed request shows a retry
+  // affordance instead of spinning forever.
+  const [estatesLoading, setEstatesLoading] = React.useState(false);
+  const [estatesError, setEstatesError] = React.useState(false);
+  // iOS renders Picker as a full-height wheel, so it is presented in a sheet
+  // rather than inline. See the estate field below.
+  const [estateSheetOpen, setEstateSheetOpen] = React.useState(false);
   const [address, setAddress] = React.useState(''); // User's address
   const [fullName, setFullName] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false); // Controls password visibility
@@ -30,7 +38,18 @@ const AuthResident = () => {
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
   const [countryCode, setCountryCode] = React.useState<CountryCode>('NG');
   const [callingCode, setCallingCode] = React.useState('234');
+  // Which field currently has the keyboard, so the input shell can show a
+  // brand-coloured border instead of sitting flat on the lavender panel.
+  const [focusedField, setFocusedField] = React.useState<string | null>(null);
   const { login } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  // Lets Return advance through the signup form instead of dismissing the
+  // keyboard on every field.
+  const emailRef = React.useRef<TextInput | null>(null);
+  const passwordRef = React.useRef<TextInput | null>(null);
+  const phoneRef = React.useRef<TextInput | null>(null);
+  const addressRef = React.useRef<TextInput | null>(null);
 
 
 
@@ -53,20 +72,30 @@ const AuthResident = () => {
     setShowPassword(false);
   }, []);
 
-  React.useEffect(() => {
-  const fetchEstates = async () => {
+  const fetchEstates = React.useCallback(async () => {
+    setEstatesLoading(true);
+    setEstatesError(false);
     try {
-      const response = await api.get('/resident/available-estates'); // replace with your actual endpoint
+      const response = await api.get('/resident/available-estates');
       setEstates(response.data); // assuming an array of { id, name }
     } catch (error) {
       console.error('Error fetching estates:', error);
+      setEstatesError(true);
+    } finally {
+      setEstatesLoading(false);
     }
-  };
+  }, []);
 
-  if (mode === 'signup') {
-    fetchEstates();
-  }
-}, [mode]);
+  React.useEffect(() => {
+    if (mode === 'signup') {
+      fetchEstates();
+    }
+  }, [mode, fetchEstates]);
+
+  const selectedEstateName = React.useMemo(() => {
+    const match = (estates as any[]).find((e) => String(e.id) === String(selectedEstate));
+    return match?.name;
+  }, [estates, selectedEstate]);
 
 // Clear form fields when switching between login and signup modes
 React.useEffect(() => {
@@ -145,10 +174,7 @@ const handleAuth = async () => {
     )) {
       Alert.alert('Success', 'Account created successfully. Please check your email and wait for admin approval.');
       clearSignupFields();
-      navigation.navigate('ResidentApp', {
-        screen: 'awaiting_approval',
-        params: { estateName },
-      });
+      navigation.navigate('awaiting_approval', { estateName });
       return;
     }
 
@@ -164,20 +190,14 @@ const handleAuth = async () => {
     if (mode === 'signup') {
       Alert.alert('Success', 'Account created successfully. Awaiting admin approval.');
       clearSignupFields();
-      navigation.navigate('ResidentApp', {
-        screen: 'awaiting_approval',
-        params: { estateName },
-      });
+      navigation.navigate('awaiting_approval', { estateName });
     } else if (mode === 'login') {
       if (isApproved) {
          await login(token, refreshToken);
         Alert.alert('Success', 'Logged in successfully');
       } else {
         Alert.alert('Account Pending Approval', 'Your account is not yet approved.');
-        navigation.navigate('ResidentApp', {
-          screen: 'awaiting_approval',
-          params: { estateName },
-        });
+        navigation.navigate('awaiting_approval', { estateName });
       }
     }
 
@@ -216,10 +236,7 @@ const handleAuth = async () => {
     if (serverMessage?.toLowerCase().includes('not approved') ||
         serverMessage?.toLowerCase().includes('awaiting confirmation')) {
       Alert.alert('Account Not Approved', 'Redirecting you to awaiting approval screen...');
-      navigation.navigate('ResidentApp', {
-        screen: 'awaiting_approval',
-        params: { estateName },
-      });
+      navigation.navigate('awaiting_approval', { estateName });
       return;
     }
 
@@ -228,10 +245,7 @@ const handleAuth = async () => {
         'Account Not Approved',
         'Redirecting you to awaiting approval screen...'
       );
-      navigation.navigate('ResidentApp', {
-        screen: 'awaiting_approval',
-        params: { estateName },
-      });
+      navigation.navigate('awaiting_approval', { estateName });
       return;
     }
 
@@ -306,11 +320,34 @@ const handleAuth = async () => {
          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
        >
-         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+         {/*
+           * NOTE: do not wrap this ScrollView in a TouchableWithoutFeedback.
+           * Touchables clone their child and inject Pressability's responder
+           * handlers onto it, so the touchable claims the responder on
+           * touch-down and the ScrollView never receives the pan - the signup
+           * form silently refuses to scroll. Tap-to-dismiss is already covered
+           * by keyboardShouldPersistTaps + keyboardDismissMode below.
+           */}
              <ScrollView
-         contentContainerStyle={{flexGrow: 1, paddingVertical: 20 }}
+         contentContainerStyle={{
+           flexGrow: 1,
+           // Login leads with the hero illustration, which is meant to bleed
+           // under the status bar. Signup opens straight onto the heading, so
+           // without the inset the title renders behind the Dynamic Island.
+           paddingTop: mode === 'login' ? 20 : insets.top + 20,
+           // Clears the home indicator and leaves the switch-mode row fully
+           // readable instead of flush against the bottom edge.
+           paddingBottom: insets.bottom + 32,
+         }}
+         contentInsetAdjustmentBehavior="never"
+         // "handled" lets taps on empty space fall through and dismiss the
+         // keyboard while still letting buttons receive their press.
          keyboardShouldPersistTaps="handled"
-         showsVerticalScrollIndicator={false}
+         keyboardDismissMode="on-drag"
+         // Login fits on one screen, but signup is taller than the viewport -
+         // hiding the indicator there removes the only cue that the Sign up
+         // button and the account-switch row are further down.
+         showsVerticalScrollIndicator={mode === 'signup'}
        >
         {/* Show image only in login mode */}
         {mode === 'login' ? (
@@ -324,17 +361,17 @@ const handleAuth = async () => {
        <View
         style={[
           styles.inputContainer,
-          { height: mode === 'login' ? '55%' : '100%' },
+          mode === 'login' ? styles.inputContainerLogin : styles.inputContainerSignup,
         ]}
        >
           {/* Header section with title and subtitle */}
-          <View style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'flex-start', gap: 8 }}>
-            <Icon name="arrowRFilled" size={20} style={{ marginTop: 8 }} />
-            <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
-              <Text style={{ fontSize: 30, textAlign: 'left', fontWeight: 'bold', color: '#000000', marginBottom: 0 }}>
-                {mode === 'login' ? 'Log in ' : 'Create an account '}
+          <View style={styles.headerRow}>
+            <Icon name="arrowRFilled" size={20} style={styles.headerCaret} />
+            <View style={styles.headerTextGroup}>
+              <Text style={styles.headerTitle}>
+                {mode === 'login' ? 'Log in' : 'Create an account'}
               </Text>
-              <Text style={{ fontSize: 18, textAlign: 'left', fontWeight: '500', color: '#000000', marginBottom: 10 }}>
+              <Text style={styles.headerSubtitle}>
                 {mode === 'login' ? 'Enter your email to log in' : 'Fill in your details to sign up'}
               </Text>
             </View>
@@ -352,45 +389,90 @@ const handleAuth = async () => {
 
        // ===== LOGIN FORM =====
               <View style={styles.loginForm}>
-                <View style={styles.loginInputShell}>
+                <View
+                  style={[
+                    styles.loginInputShell,
+                    focusedField === 'email' && styles.inputShellFocused,
+                  ]}
+                >
                   <View style={styles.loginEnvelopeIcon}>
-                    <View style={styles.loginEnvelopeBody} />
-                    <View style={styles.loginEnvelopeFlapLeft} />
-                    <View style={styles.loginEnvelopeFlapRight} />
+                    <View
+                      style={[
+                        styles.loginEnvelopeBody,
+                        focusedField === 'email' && styles.iconStrokeFocused,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.loginEnvelopeFlapLeft,
+                        focusedField === 'email' && styles.iconFillFocused,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.loginEnvelopeFlapRight,
+                        focusedField === 'email' && styles.iconFillFocused,
+                      ]}
+                    />
                   </View>
                   <TextInput
                     placeholder="Email address"
                     value={email}
                     onChangeText={setEmail}
-                    placeholderTextColor="#6E6E72"
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholderTextColor="#9A9AA0"
                     style={styles.loginTextInput}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
                     autoCorrect={false}
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
                   />
                 </View>
 
-                <View style={styles.loginInputShell}>
+                <View
+                  style={[
+                    styles.loginInputShell,
+                    focusedField === 'password' && styles.inputShellFocused,
+                  ]}
+                >
                   <View style={styles.loginLockIcon}>
-                    <View style={styles.loginLockShackle} />
-                    <View style={styles.loginLockBody} />
+                    <View
+                      style={[
+                        styles.loginLockShackle,
+                        focusedField === 'password' && styles.iconStrokeFocused,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.loginLockBody,
+                        focusedField === 'password' && styles.iconFillFocused,
+                      ]}
+                    />
                   </View>
                   <TextInput
+                    ref={passwordRef}
                     placeholder="Password"
                     value={password}
                     onChangeText={setPassword}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
                     secureTextEntry={!showPassword}
-                    placeholderTextColor="#6E6E72"
+                    placeholderTextColor="#9A9AA0"
                     keyboardType="default"
                     autoCorrect={false}
                     autoComplete="current-password"
                     autoCapitalize="none"
                     style={styles.loginTextInput}
+                    returnKeyType="go"
+                    onSubmitEditing={handleAuth}
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
                     style={styles.loginPasswordToggle}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Icon
                       name={showPassword ? 'eyeO' : 'eyeC'}
@@ -403,121 +485,268 @@ const handleAuth = async () => {
 
           ) : (
             // ===== SIGNUP FORM =====
-            <View style={{ width: '100%' }}>
+            <View style={styles.signupForm}>
               {/* Full name input */}
-              <View style={styles.inputDetails}>
-                <TextInput
-                  placeholder="First name Last name"
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholderTextColor="#6E6E72"
-                  style={styles.inputBox}
-                  keyboardType="default"
-                  autoComplete="name"
-                  autoCapitalize="words"
-                />
-              </View>
-              {/* Email input */}
-              <View style={styles.inputDetails}>
-                <TextInput
-                  placeholder="Email address"
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholderTextColor="#6E6E72"
-                  style={styles.inputBox}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-              {/* Password input */}
-              <View style={[styles.inputDetails, styles.signupPasswordField]}>
-                <TextInput
-                  placeholder="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholderTextColor="#6E6E72"
-                  style={styles.inputBox}
-                  keyboardType="default"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.signupPasswordToggle}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Full name</Text>
+                <View
+                  style={[
+                    styles.inputDetails,
+                    focusedField === 'fullName' && styles.inputShellFocused,
+                  ]}
                 >
-                  <Icon
-                    name={showPassword ? 'eyeO' : 'eyeC'}
-                    size={22}
-                    style={styles.loginEyeIcon}
-                  />
-                </TouchableOpacity>
-              </View>
-
-
-              <View style={styles.inputDetails}>
-                <View style={styles.phoneInputRow}>
-                  <View style={styles.countryPickerWrap}>
-                    <CountryPicker
-                      countryCode={countryCode}
-                      withCallingCode
-                      withFlag
-                      withFilter
-                      withEmoji
-                      onSelect={(country: Country) => {
-                        setCountryCode(country.cca2);
-                        setCallingCode(country.callingCode[0]);
-                      }}
-                      containerButtonStyle={styles.countryPickerButton}
-                    />
-                    <Icon name="chevron_down" size={12} style={styles.countryPickerChevron} />
-                  </View>
-                  <Text style={styles.countryCode}>+{callingCode}</Text>
-                  <View style={styles.phoneDivider} />
                   <TextInput
-                    placeholder="Phone number"
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholderTextColor="#6E6E72"
-                    style={styles.phoneInput}
-                    keyboardType="phone-pad"
-                    autoComplete="tel"
+                    placeholder="First name Last name"
+                    value={fullName}
+                    onChangeText={setFullName}
+                    onFocus={() => setFocusedField('fullName')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholderTextColor="#9A9AA0"
+                    style={styles.inputBox}
+                    keyboardType="default"
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailRef.current?.focus()}
                   />
                 </View>
               </View>
 
-              {/* Estate input */}
-              <View style={styles.inputDetails}>
-              {estates.length === 0 ? (
-  <ActivityIndicator size="small" color="#8506FF" />
-                ) : (
-                  <Picker
-                    selectedValue={selectedEstate}
-                    onValueChange={(itemValue) => setSelectedEstate(itemValue)}
-                    itemStyle={styles.estatePickerItem}
-                    style={[
-                      styles.estatePicker,
-                      !selectedEstate && styles.estatePickerPlaceholder,
-                    ]}
+              {/* Email input */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Email address</Text>
+                <View
+                  style={[
+                    styles.inputDetails,
+                    focusedField === 'signupEmail' && styles.inputShellFocused,
+                  ]}
+                >
+                  <TextInput
+                    ref={emailRef}
+                    placeholder="you@example.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    onFocus={() => setFocusedField('signupEmail')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholderTextColor="#9A9AA0"
+                    style={styles.inputBox}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="email"
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                  />
+                </View>
+              </View>
+
+              {/* Password input */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Password</Text>
+                <View
+                  style={[
+                    styles.inputDetails,
+                    styles.signupPasswordField,
+                    focusedField === 'signupPassword' && styles.inputShellFocused,
+                  ]}
+                >
+                  <TextInput
+                    ref={passwordRef}
+                    placeholder="At least 8 characters"
+                    value={password}
+                    onChangeText={setPassword}
+                    onFocus={() => setFocusedField('signupPassword')}
+                    onBlur={() => setFocusedField(null)}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#9A9AA0"
+                    style={styles.inputBox}
+                    keyboardType="default"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    autoComplete="new-password"
+                    returnKeyType="next"
+                    onSubmitEditing={() => phoneRef.current?.focus()}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.signupPasswordToggle}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Picker.Item label="Select Estate" value="" />
-                    {estates.map((estate: any) => (
-                      <Picker.Item key={estate.id} label={estate.name} value={estate.id} />
-                    ))}
-                  </Picker>
+                    <Icon
+                      name={showPassword ? 'eyeO' : 'eyeC'}
+                      size={22}
+                      style={styles.loginEyeIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Phone input */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Phone number</Text>
+                <View
+                  style={[
+                    styles.inputDetails,
+                    focusedField === 'phone' && styles.inputShellFocused,
+                  ]}
+                >
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.countryPickerWrap}>
+                      <CountryPicker
+                        countryCode={countryCode}
+                        withCallingCode
+                        withFlag
+                        withFilter
+                        withEmoji
+                        onSelect={(country: Country) => {
+                          setCountryCode(country.cca2);
+                          setCallingCode(country.callingCode[0]);
+                        }}
+                        containerButtonStyle={styles.countryPickerButton}
+                      />
+                      <Icon name="chevron_down" size={12} style={styles.countryPickerChevron} />
+                    </View>
+                    <Text style={styles.countryCode}>+{callingCode}</Text>
+                    <View style={styles.phoneDivider} />
+                    <TextInput
+                      ref={phoneRef}
+                      placeholder="800 000 0000"
+                      value={phone}
+                      onChangeText={setPhone}
+                      onFocus={() => setFocusedField('phone')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholderTextColor="#9A9AA0"
+                      style={styles.phoneInput}
+                      keyboardType="phone-pad"
+                      autoComplete="tel"
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Estate input */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Estate</Text>
+                {estatesLoading ? (
+                  <View style={[styles.inputDetails, styles.estateStatusShell]}>
+                    <ActivityIndicator size="small" color="#8506FF" />
+                    <Text style={styles.estateStatusText}>Loading estates…</Text>
+                  </View>
+                ) : estatesError || estates.length === 0 ? (
+                  // Previously this branch rendered a spinner forever, so a failed
+                  // request looked identical to one still in flight.
+                  <TouchableOpacity
+                    style={[styles.inputDetails, styles.estateStatusShell]}
+                    onPress={fetchEstates}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.estateStatusText}>
+                      {estatesError ? "Couldn't load estates." : 'No estates available.'}
+                    </Text>
+                    <Text style={styles.estateRetryText}>Retry</Text>
+                  </TouchableOpacity>
+                ) : Platform.OS === 'ios' ? (
+                  // On iOS, Picker is a ~216pt UIPickerView wheel, not a compact
+                  // dropdown. Rendering it inline inside a 56pt shell clipped it
+                  // and let its rows spill over the next field, so iOS gets a
+                  // tappable summary row that opens the wheel in a sheet.
+                  <>
+                    <TouchableOpacity
+                      style={styles.inputDetails}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setEstateSheetOpen(true);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Text
+                        style={[
+                          styles.estateValueText,
+                          !selectedEstate && styles.estateValuePlaceholder,
+                        ]}
+                      >
+                        {selectedEstateName ?? 'Select Estate'}
+                      </Text>
+                      <Icon name="chevron_down" size={14} style={styles.estateChevron} />
+                    </TouchableOpacity>
+
+                    <Modal
+                      visible={estateSheetOpen}
+                      transparent
+                      animationType="slide"
+                      onRequestClose={() => setEstateSheetOpen(false)}
+                    >
+                      <TouchableWithoutFeedback onPress={() => setEstateSheetOpen(false)}>
+                        <View style={styles.estateSheetBackdrop} />
+                      </TouchableWithoutFeedback>
+                      <View style={[styles.estateSheet, { paddingBottom: insets.bottom }]}>
+                        <View style={styles.estateSheetHeader}>
+                          <Text style={styles.estateSheetTitle}>Select Estate</Text>
+                          <TouchableOpacity
+                            onPress={() => setEstateSheetOpen(false)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Text style={styles.estateSheetDone}>Done</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <Picker
+                          selectedValue={selectedEstate}
+                          onValueChange={(itemValue) => setSelectedEstate(itemValue)}
+                          itemStyle={styles.estatePickerItem}
+                        >
+                          <Picker.Item label="Select Estate" value="" />
+                          {estates.map((estate: any) => (
+                            <Picker.Item key={estate.id} label={estate.name} value={estate.id} />
+                          ))}
+                        </Picker>
+                      </View>
+                    </Modal>
+                  </>
+                ) : (
+                  <View style={styles.inputDetails}>
+                    <Picker
+                      selectedValue={selectedEstate}
+                      onValueChange={(itemValue) => setSelectedEstate(itemValue)}
+                      itemStyle={styles.estatePickerItem}
+                      style={[
+                        styles.estatePicker,
+                        !selectedEstate && styles.estatePickerPlaceholder,
+                      ]}
+                    >
+                      <Picker.Item label="Select Estate" value="" />
+                      {estates.map((estate: any) => (
+                        <Picker.Item key={estate.id} label={estate.name} value={estate.id} />
+                      ))}
+                    </Picker>
+                  </View>
                 )}
-            </View>
+              </View>
+
               {/* Address input */}
-              <View style={styles.inputDetails}>
-                <TextInput
-                  placeholder="Street name | House unit | Block"
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholderTextColor="#6E6E72"
-                  style={styles.inputBox}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>House address</Text>
+                <View
+                  style={[
+                    styles.inputDetails,
+                    focusedField === 'address' && styles.inputShellFocused,
+                  ]}
+                >
+                  <TextInput
+                    ref={addressRef}
+                    placeholder="Street name | House unit | Block"
+                    value={address}
+                    onChangeText={setAddress}
+                    onFocus={() => setFocusedField('address')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholderTextColor="#9A9AA0"
+                    style={styles.inputBox}
+                    // Was keyboardType="email-address", which gave residents an
+                    // "@" key and no capitalisation for a street address.
+                    keyboardType="default"
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                  />
+                </View>
               </View>
             </View>
           )}
@@ -538,7 +767,7 @@ const handleAuth = async () => {
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.75}
-                onPress={() => navigation.navigate('forget_password', { role: 'resident' })}
+                onPress={() => navigation.navigate('forget_password')}
               >
                 <Text style={styles.forgotText}>Forgot Password</Text>
               </TouchableOpacity>
@@ -581,6 +810,7 @@ const handleAuth = async () => {
               loading && styles.buttonDisabled,
             ]}
             onPress={handleAuth}
+            activeOpacity={0.85}
             disabled={loading}
           >
             {loading ? (
@@ -626,7 +856,6 @@ const handleAuth = async () => {
           )}
         </View>
         </ScrollView>
-            </TouchableWithoutFeedback>
               </KeyboardAvoidingView>
 
   );
@@ -665,7 +894,6 @@ const styles = StyleSheet.create({
   },
   // Form container styles
   inputContainer: {
-    flex: 0.55,
     backgroundColor: '#F7EFFF',
     width: '100%',
     paddingVertical: 10,
@@ -674,22 +902,108 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     gap: 20,
   },
+  // Login is a fixed split: hero illustration on top, form filling the rest.
+  inputContainerLogin: {
+    flex: 0.55,
+    height: '55%',
+  },
+  // Signup must NOT be height-constrained. `height: '100%'` pinned this box to
+  // exactly one viewport, so the Sign up button and the "Already have an
+  // account?" row below it were clipped rather than scrolled into view.
+  // flexGrow lets it fill the screen when short and grow past it when not.
+  inputContainerSignup: {
+    flexGrow: 1,
+  },
+  headerRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
+  headerCaret: {
+    marginTop: 10,
+  },
+  headerTextGroup: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: 30,
+    textAlign: 'left',
+    fontWeight: '700',
+    color: '#12002B',
+    letterSpacing: -0.4,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    textAlign: 'left',
+    fontWeight: '400',
+    color: '#6E6E72',
+    marginBottom: 10,
+  },
   loginForm: {
     width: '100%',
-    gap: 20,
+    gap: 16,
+  },
+  signupForm: {
+    width: '100%',
+    gap: 14,
+  },
+  // Label + input pair. Labels keep each signup field identifiable once the
+  // placeholder is replaced by the resident's own text.
+  fieldGroup: {
+    width: '100%',
+  },
+  fieldLabel: {
+    color: '#5B4470',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  estateStatusShell: {
+    gap: 10,
+    justifyContent: 'flex-start',
+  },
+  estateStatusText: {
+    color: '#6E6E72',
+    fontSize: 15,
+  },
+  estateRetryText: {
+    color: '#8506FF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginLeft: 'auto',
   },
   loginInputShell: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#EDE2FA',
     flexDirection: 'row',
     minHeight: 56,
     paddingHorizontal: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
+    shadowColor: '#4C0096',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 2,
+  },
+  // Applied on top of the shell while that field holds the keyboard.
+  inputShellFocused: {
+    borderColor: '#8506FF',
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+  },
+  iconStrokeFocused: {
+    borderColor: '#8506FF',
+  },
+  iconFillFocused: {
+    backgroundColor: '#8506FF',
   },
   loginEnvelopeIcon: {
     height: 16,
@@ -748,7 +1062,7 @@ const styles = StyleSheet.create({
   loginTextInput: {
     color: '#1F2933',
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     paddingVertical: 0,
   },
   loginPasswordToggle: {
@@ -774,13 +1088,14 @@ const styles = StyleSheet.create({
   },
   rememberCheck: {
     alignItems: 'center',
-    backgroundColor: '#F5F6F7',
+    backgroundColor: '#FFFFFF',
     borderColor: '#C8CCD2',
+    borderRadius: 4,
     borderWidth: 1,
-    height: 14,
+    height: 16,
     justifyContent: 'center',
-    marginRight: 6,
-    width: 14,
+    marginRight: 8,
+    width: 16,
   },
   rememberCheckActive: {
     backgroundColor: '#8506FF',
@@ -793,12 +1108,14 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
   rememberLabel: {
-    color: '#1F2933',
-    fontSize: 12,
+    color: '#5B5B63',
+    fontSize: 13,
   },
+  // Reads as a link rather than as a second static label next to "Remember me".
   forgotText: {
-    color: '#1F2933',
-    fontSize: 12,
+    color: '#8506FF',
+    fontSize: 13,
+    fontWeight: '600',
   },
   termsRow: {
     alignItems: 'flex-start',
@@ -846,14 +1163,17 @@ const styles = StyleSheet.create({
     minHeight: 56,
     alignSelf: 'center',
     borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#EDE2FA',
     flexDirection: 'row',
     paddingHorizontal: 18,
     paddingVertical: 0,
-    marginVertical: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
+    // Spacing between fields now comes from signupForm's gap, so the shell
+    // itself no longer carries a vertical margin.
+    shadowColor: '#4C0096',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 2,
     //  ...Platform.select({
     //   ios: {
@@ -966,6 +1286,46 @@ const styles = StyleSheet.create({
   estatePickerPlaceholder: {
     color: '#6E6E72',
   },
+  estateValueText: {
+    color: '#1F2933',
+    flex: 1,
+    fontSize: 15,
+  },
+  estateValuePlaceholder: {
+    color: '#9A9AA0',
+  },
+  estateChevron: {
+    marginLeft: 8,
+    tintColor: '#77777A',
+  },
+  estateSheetBackdrop: {
+    backgroundColor: 'rgba(18, 0, 43, 0.35)',
+    flex: 1,
+  },
+  estateSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+  },
+  estateSheetHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#EDE2FA',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  estateSheetTitle: {
+    color: '#12002B',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  estateSheetDone: {
+    color: '#8506FF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
   // Label styles
   label: {
     color: '#8506FF',
@@ -1002,27 +1362,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#8506FF',
     marginTop: 20,
     zIndex: 10,
-    elevation: 5,
+    shadowColor: '#8506FF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 6,
   },
   loginButton: {
     alignItems: 'center',
     backgroundColor: '#8506FF',
     borderRadius: 22,
     justifyContent: 'center',
-    marginTop: 34,
+    marginTop: 28,
     minHeight: 56,
     width: '100%',
+    shadowColor: '#8506FF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 6,
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   // Button text styles
   buttonText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontWeight: '700',
+    fontSize: 17,
+    letterSpacing: 0.2,
   },
   // Mode switch button styles
   switchModeButton: {

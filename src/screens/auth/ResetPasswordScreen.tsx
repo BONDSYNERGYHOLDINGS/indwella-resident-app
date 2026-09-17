@@ -24,7 +24,7 @@ type ResetNavigationProp = NativeStackNavigationProp<RootStackParamList, 'reset_
 export default function ResetPasswordScreen() {
   const navigation = useNavigation<ResetNavigationProp>();
   const route = useRoute<ResetRouteProp>();
-  const { role, resetToken } = route.params;
+  const { resetToken } = route.params;
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
@@ -72,7 +72,7 @@ export default function ResetPasswordScreen() {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: role === 'admin' ? 'admin_auth' : 'resident_auth' }],
+        routes: [{ name: 'resident_auth' }],
       }),
     );
   };

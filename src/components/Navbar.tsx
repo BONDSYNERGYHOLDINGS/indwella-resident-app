@@ -1,6 +1,6 @@
 
 
-import { Alert, DeviceEventEmitter, Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { DeviceEventEmitter, Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import Icon from "./Icon";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
@@ -106,18 +106,10 @@ export default function Navbar({ userRole, firstName, shortAddress, fullAddress 
     }
   };
 
+  // Only residents use this app, so there is no admin/security branch to take
+  // here - facility managers are on the web admin and security has its own app.
   const handleNotificationPress = () => {
-    switch (userRole) {
-      case "resident":
-        navigation.navigate("ResidentApp", { screen: "notification" });
-        break;
-      case "admin":
-        navigation.navigate("AdminApp", { screen: "notification" });
-        break;
-      case "security":
-        Alert.alert("Info", "Notifications are not available for security users yet.");
-        break;
-    }
+    navigation.navigate("ResidentApp", { screen: "notification" });
   };
 
   return (

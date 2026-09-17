@@ -1,16 +1,9 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import AppIntroSlider from 'react-native-app-intro-slider';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-
-
-type Role = 'resident' | 'admin' | 'security';
-
-
-
-
 
 type Slide = {
     key: string;
@@ -19,12 +12,13 @@ type Slide = {
     image: any;
     bgColor: string;
     arrow?: any;
-}
+};
 
-const commonSlides: Slide[] = [
+// Resident-only deck. The security agent flow lives in its own app, so there is
+// no role to branch on here any more.
+const slides: Slide[] = [
     {
         key: 'slide1',
-      
         text: 'Effortlessly manage your estate, payments & more all in one place',
         image: require('../assets/slide1.png'),
         bgColor: '#F7EFFF',
@@ -32,7 +26,6 @@ const commonSlides: Slide[] = [
     },
     {
         key: 'slide2',
-       
         text: 'No more waiting at the gate, schedule & manage visitor arrivals with ease.',
         image: require('../assets/slide2.png'),
         bgColor: '#EEFFF9',
@@ -45,44 +38,22 @@ const commonSlides: Slide[] = [
         bgColor: '#E3F8FF',
         arrow: require('../assets/r3.png'),
     },
-];
-
-const roleFinalSlides: Record<Role, Slide> = {
-    resident: {
+    {
         key: 'slide4',
         text: 'See an issue? Report it to your manager with Indwella',
         image: require('../assets/resImg.png'),
         bgColor: '#FFEFF1',
         arrow: require('../assets/r4.png'),
     },
-    admin: {
-        key: 'slide4',
-        text: 'Effortlessly manage your estate, payments & more all in one place',
-        image: require('../assets/adminImg.png'),
-        bgColor: '#F7EFFF',
-        arrow: require('../assets/r1.png'),
-    },
-    security: {
-        key: 'slide4',
-        text: 'Seamlessly manage your estate security with Indwella',
-        image: require('../assets/secImg.png'),
-        bgColor: '#E3F8FF',
-        arrow: require('../assets/s1.png'),
-    },
-};
-
-
+];
 
 const IntroSliderScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-    const route = useRoute<any>();
-    const role: Role = route.params?.role ?? 'resident';
+    const handleDone = () => {
+        navigation.navigate('resident_auth');
+    };
 
-
-    const slides = [...commonSlides, roleFinalSlides[role]];
-
-    // const renderItem = ({ item }: { item: Slide }) => (
     const renderItem = ({ item, index }: any) => {
         const isLast = index === slides.length - 1;
 
@@ -94,42 +65,21 @@ const IntroSliderScreen = () => {
                 </View>
                 {/* Content */}
                 <View style={[styles.textContainer, { backgroundColor: item.bgColor }]}>
-                    <Image source={item.arrow}  />
-              
+                    <Image source={item.arrow} />
+
                     <Text style={styles.destext}>{item.text}</Text>
                     {isLast && (
-                        <TouchableOpacity style={styles.actionBtn} onPress={handleDone}>
+                        <TouchableOpacity
+                            style={styles.actionBtn}
+                            activeOpacity={0.85}
+                            onPress={handleDone}>
                             <Text style={styles.actionText}>Get Started</Text>
                         </TouchableOpacity>
                     )}
                 </View>
-
-              
-
-               
             </View>
         );
     };
-   
-    // const handleDone = () => {
-    //     if (role === 'resident') navigation.navigate('resident_auth');
-    //     else if (role === 'admin') navigation.navigate('admin_auth');
-    //     else if (role === 'security') navigation.navigate('security_auth');
-    // };
-
-    const handleDone = () => {
-  if (role === 'resident') {
-    navigation.navigate('resident_auth');
-  } else if (role === 'admin') {
-    navigation.navigate('admin_auth');
-  } else if (role === 'security') {
-    navigation.navigate('security_auth');
-  }
-};
-
-    // const onDone = () => {
-    //     navigation.navigate(`${role}login` as never); 
-    // };
 
     const renderNextButton = () => (
         <View style={styles.buttonCircle}>
@@ -143,29 +93,20 @@ const IntroSliderScreen = () => {
         </View>
     );
 
-    // const renderDoneButton = () => (
-    //     <View style={styles.doneButton}>
-    //         <Text style={styles.buttonText}>Done</Text>
-    //     </View>
-    // );
-
-
-  return (
-      <AppIntroSlider
-          renderItem={renderItem}
-          data={slides}
-            // onDone={handleDone}
-          showDoneButton={false}
-          showSkipButton
-          onSkip={handleDone}
-          renderNextButton={renderNextButton}
-          renderSkipButton={renderSkipButton}
-        //   renderDoneButton={renderDoneButton}
-          dotStyle={styles.dotStyle}
-          activeDotStyle={styles.activeDotStyle}
-      />
-  )
-}
+    return (
+        <AppIntroSlider
+            renderItem={renderItem}
+            data={slides}
+            showDoneButton={false}
+            showSkipButton
+            onSkip={handleDone}
+            renderNextButton={renderNextButton}
+            renderSkipButton={renderSkipButton}
+            dotStyle={styles.dotStyle}
+            activeDotStyle={styles.activeDotStyle}
+        />
+    );
+};
 
 export default IntroSliderScreen;
 
@@ -184,24 +125,19 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '700',
         fontSize: 25,
-
     },
     slide: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        // padding: 30,
         backgroundColor: 'white',
         width: '100%',
-      
     },
     image: {
         width: '100%',
         height: '70%',
         resizeMode: 'contain',
-      
     },
-    
     title: {
         fontSize: 24,
         fontWeight: 'bold',
@@ -215,7 +151,6 @@ const styles = StyleSheet.create({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
-    
     },
     textContainer: {
         width: '100%',
@@ -224,7 +159,7 @@ const styles = StyleSheet.create({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        gap: 10
+        gap: 10,
     },
     destext: {
         fontSize: 25,
@@ -234,29 +169,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         lineHeight: 33,
         letterSpacing: 1,
-        fontWeight: '600'
+        fontWeight: '600',
     },
-
-
     buttonCircle: {
         width: 60,
         height: 40,
-        // backgroundColor: '#4C0096',
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
         marginHorizontal: 10,
-        
-    },
-    doneButton: {
-        width: 60,
-        height: 40,
-        backgroundColor: '#4C0096',
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        // marginHorizontal: 10,
-        marginBottom: 50,
     },
     buttonText: {
         color: 'black',
@@ -265,10 +186,10 @@ const styles = StyleSheet.create({
     dotStyle: {
         backgroundColor: 'white',
         width: 11,
-        height: 11  ,
+        height: 11,
         borderRadius: 1,
         borderWidth: 1,
-        transform: [{rotate: '45deg'}],
+        transform: [{ rotate: '45deg' }],
         marginHorizontal: 5,
     },
     activeDotStyle: {

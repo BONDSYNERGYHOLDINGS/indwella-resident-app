@@ -2,7 +2,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Home from '../screens/resident/Home';
-import AwaitingApprovalScreen from '../screens/resident/AwaitingApprovalScreen';
 import BookVisitorScreen from '../screens/resident/BookVisitorsScreen';
 import ResidentProfileScreen from '../screens/resident/ResidentProfileScreen';
 import ResidentChangePasswordScreen from '../screens/resident/ResidentChangePasswordScreen';
@@ -14,6 +13,7 @@ import PendingChargesScreen from '../screens/resident/pendingChargesScreen';
 import CreditWalletScreen from '../screens/resident/CreditWalletScreen';
 import NotificationScreen from '../screens/resident/NotificationScreen';
 import ReportIssuesScreen from '../screens/resident/ReportIssuesScreen';
+import TransactionDetailScreen from '../screens/resident/TransactionDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,10 +23,6 @@ const ResidentStack = () => {
       initialRouteName="resident_home"
       screenOptions={{headerShown: false}}>
       <Stack.Screen name="resident_home" component={Home} />
-      <Stack.Screen
-        name="awaiting_approval"
-        component={AwaitingApprovalScreen}
-      />
       <Stack.Screen name="book_visitor" component={BookVisitorScreen} />
       <Stack.Screen name="booking_success" component={BookingSuccessScreen} />
       <Stack.Screen name="resident_profile" component={ResidentProfileScreen} />
@@ -41,6 +37,7 @@ const ResidentStack = () => {
       <Stack.Screen name="credit" component={CreditWalletScreen} />
       <Stack.Screen name="notification" component={NotificationScreen} />
       <Stack.Screen name="report_issues" component={ReportIssuesScreen} />
+      <Stack.Screen name="transaction_detail" component={TransactionDetailScreen} />
     </Stack.Navigator>
   );
 };

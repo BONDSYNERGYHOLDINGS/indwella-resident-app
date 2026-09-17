@@ -16,7 +16,13 @@ end
 
 target 'indwella_client' do
   config = use_native_modules!
-    pod 'react-native-contacts', :path => '../node_modules/react-native-contacts'
+
+  # @react-native-firebase/* ships Swift pods (FirebaseCoreInternal) that depend on
+  # GoogleUtilities/nanopb. Those are Obj-C pods without module maps, so they cannot be
+  # imported from Swift when everything is statically linked. Opting these specific pods
+  # into modular headers keeps the rest of the RN pods on the default (non-modular) path.
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
 
   use_react_native!(
     :path => config[:reactNativePath],

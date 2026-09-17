@@ -4,10 +4,14 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { api } from '../lib/apiClient';
+import { RootStackParamList } from '../navigation/types';
 
 type TransactionDirection = 'credit' | 'debit';
 type TransactionStatus = 'successful' | 'pending' | 'failed' | null;
@@ -22,6 +26,13 @@ interface Transaction {
   type: TransactionDirection;
   status: TransactionStatus;
   group: TransactionGroup;
+  // Full-precision fields the compact list view above intentionally
+  // abbreviates - carried through so TransactionDetailScreen doesn't need a
+  // second fetch (there's no confirmed single-transaction GET route).
+  rawAmount: number;
+  rawReference: string;
+  rawCreatedAt: string | null;
+  rawMethod: string | null;
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-NG', {
@@ -35,16 +46,31 @@ const groupOrder: TransactionGroup[] = [
   'Other transactions',
 ];
 
+// Bill/service-charge payments were showing as "+₦X Wallet top-up" (credit)
+// instead of "-₦X Estate payment" (debit) whenever `method` wasn't the exact
+// string `wallet_to_estate` - which, like several other backend-shape guesses
+// found this session (residents-count, resident-approval, notification body),
+// was never independently confirmed against a live response either. Rather
+// than hardcode one more single unverified string, this matches by substring
+// against every wallet-debiting activity DATA-MODEL.md documents (service
+// charges, license fees, electricity purchases), so a differently-spelled
+// backend value (e.g. `pay_all_service_charges`, `wallet_to_estate_charge`)
+// still classifies as a debit instead of silently falling through to the
+// top-up default. See docs/ENGINEERING-HANDOFF.md.
+const DEBIT_METHOD_HINTS = ['estate', 'charge', 'bill', 'license_fee', 'electricity'];
+
 function normalizeMethod(method?: string | null) {
   const normalizedMethod = String(method || '').trim().toLowerCase();
 
+  if (DEBIT_METHOD_HINTS.some((hint) => normalizedMethod.includes(hint))) {
+    return {
+      label: 'Estate payment',
+      direction: 'debit' as const,
+      group: 'Estate payments' as const,
+    };
+  }
+
   switch (normalizedMethod) {
-    case 'wallet_to_estate':
-      return {
-        label: 'Estate payment',
-        direction: 'debit' as const,
-        group: 'Estate payments' as const,
-      };
     case 'card':
       return {
         label: 'Wallet top-up via card',
@@ -72,12 +98,55 @@ function normalizeMethod(method?: string | null) {
         group: 'Wallet top-ups' as const,
       };
     default:
+      // Truly unrecognized method - previously this returned "Wallet top-up"
+      // (credit), which is how a mismatched estate-payment method silently
+      // became a mislabeled top-up. "Other transactions" exists in
+      // TransactionGroup specifically for this case but was dead code until
+      // now - nothing ever produced it.
       return {
-        label: 'Wallet top-up',
+        label: 'Other transaction',
         direction: 'credit' as const,
-        group: 'Wallet top-ups' as const,
+        group: 'Other transactions' as const,
       };
   }
+}
+
+// Bill/charge payments have no confirmed name field on the wallet
+// transaction response (WalletTransactionResponse only documents id, amount,
+// currency, reference, method, status, created_at - see docs/DATA-MODEL.md,
+// itself an unconfirmed guess like several other types this session). This
+// defensively checks several plausible field names/shapes so that if the
+// backend does send a specific charge name (e.g. "Water Bill"), it surfaces
+// here instead of never being read at all - falls back to normalizeMethod()'s
+// generic "Estate payment" label (set by the caller) when none are present.
+function getChargeName(transaction: any): string | null {
+  const directName =
+    transaction?.description ||
+    transaction?.narration ||
+    transaction?.charge_name ||
+    transaction?.service_charge_name ||
+    transaction?.label;
+  if (typeof directName === 'string' && directName.trim()) {
+    return directName.trim();
+  }
+
+  // A single pay-all-service-charges transaction can cover multiple bills at
+  // once - if the backend nests the paid charges as a list, join their names
+  // rather than showing just the first one silently.
+  const chargeList = transaction?.service_charges || transaction?.charges || transaction?.items;
+  if (Array.isArray(chargeList) && chargeList.length > 0) {
+    const names: string[] = chargeList
+      .map((charge: any) => (typeof charge?.name === 'string' ? charge.name.trim() : ''))
+      .filter(Boolean);
+    if (names.length === 1) {
+      return names[0];
+    }
+    if (names.length > 1) {
+      return `${names[0]} + ${names.length - 1} more`;
+    }
+  }
+
+  return null;
 }
 
 function formatCurrency(amount: number, direction: TransactionDirection) {
@@ -211,11 +280,16 @@ function StatusBadge({ status }: { status: Exclude<TransactionStatus, null> }) {
 
 function TransactionItem({
   item,
+  onPress,
 }: {
   item: Transaction;
+  onPress: (item: Transaction) => void;
 }) {
   return (
-    <View style={styles.transactionCard}>
+    <TouchableOpacity
+      style={styles.transactionCard}
+      activeOpacity={0.7}
+      onPress={() => onPress(item)}>
       <View style={styles.transactionContent}>
         <View style={styles.leftSection}>
           <TransactionArrow type={item.type} />
@@ -233,7 +307,7 @@ function TransactionItem({
           {item.status ? <StatusBadge status={item.status} /> : null}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -242,6 +316,7 @@ interface TransactionListProps {
 }
 
 function TransactionList({ refreshKey = 0 }: TransactionListProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -261,16 +336,21 @@ function TransactionList({ refreshKey = 0 }: TransactionListProps) {
               ? 'debit'
               : 'credit';
           const formattedDate = formatTransactionDate(transaction.created_at);
+          const chargeName = getChargeName(transaction);
 
           return {
             id: String(transaction.id),
-            name: normalizedMethod.label,
+            name: chargeName || normalizedMethod.label,
             amount: formatCurrency(amount, direction),
             timestamp: formattedDate.compact,
             shortTransactionId: formatShortReference(transaction.reference),
             type: direction,
             status: formatStatus(transaction.status),
             group: normalizedMethod.group,
+            rawAmount: amount,
+            rawReference: String(transaction.reference || ''),
+            rawCreatedAt: transaction.created_at ?? null,
+            rawMethod: transaction.method ?? null,
           };
         });
 
@@ -286,6 +366,23 @@ function TransactionList({ refreshKey = 0 }: TransactionListProps) {
   }, [refreshKey]);
 
   const sections = groupTransactions(transactions);
+
+  const openTransaction = (item: Transaction) => {
+    navigation.navigate('ResidentApp', {
+      screen: 'transaction_detail',
+      params: {
+        id: item.id,
+        name: item.name,
+        amount: item.amount,
+        rawAmount: item.rawAmount,
+        direction: item.type,
+        status: item.status,
+        reference: item.rawReference,
+        rawCreatedAt: item.rawCreatedAt,
+        method: item.rawMethod,
+      },
+    });
+  };
 
   if (loading) {
     return (
@@ -316,7 +413,7 @@ function TransactionList({ refreshKey = 0 }: TransactionListProps) {
 
               {section.items.map((item, index) => (
                 <View key={item.id}>
-                  <TransactionItem item={item} />
+                  <TransactionItem item={item} onPress={openTransaction} />
                   {index < section.items.length - 1 ? <View style={styles.separator} /> : null}
                 </View>
               ))}

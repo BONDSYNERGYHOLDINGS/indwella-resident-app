@@ -26,7 +26,6 @@ export default function ForgotPasswordScreen() {
   const route = useRoute<ForgetPasswordRouteProp>();
   const [email, setEmail] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const role = route.params?.role ?? 'resident';
 
   const getErrorMessage = (err: any) =>
     err?.response?.data?.message ||
@@ -52,7 +51,6 @@ export default function ForgotPasswordScreen() {
       await api.post('/forgot-password', { email: trimmedEmail });
       setEmail(trimmedEmail);
       navigation.navigate('verify_otp', {
-        role,
         email: trimmedEmail,
       });
     } catch (err: any) {

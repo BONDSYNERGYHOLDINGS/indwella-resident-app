@@ -27,7 +27,7 @@ const RESEND_SECONDS = 60;
 export default function OtpVerificationScreen() {
   const navigation = useNavigation<OtpNavigationProp>();
   const route = useRoute<OtpRouteProp>();
-  const { email, role } = route.params;
+  const { email } = route.params;
   const [otp, setOtp] = React.useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [loading, setLoading] = React.useState(false);
   const [resending, setResending] = React.useState(false);
@@ -76,7 +76,9 @@ export default function OtpVerificationScreen() {
 
     setLoading(true);
     try {
-      const res = await api.post(`/verify-otp/${role}`, {
+      // The role is a path segment on the backend. This app only ever serves
+      // residents, so it is fixed rather than threaded through navigation.
+      const res = await api.post('/verify-otp/resident', {
         email,
         otp: otpValue,
       });
@@ -85,7 +87,6 @@ export default function OtpVerificationScreen() {
         throw new Error('Reset token was not returned by the server.');
       }
       navigation.navigate('reset_password', {
-        role,
         email,
         resetToken,
       });

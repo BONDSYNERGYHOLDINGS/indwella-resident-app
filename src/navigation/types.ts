@@ -1,17 +1,25 @@
 // navigation/types.ts
 import { NavigatorScreenParams } from '@react-navigation/native';
 
-export type AdminStackParamList = {
-  admin_home: undefined;
-  create_security: undefined;
-  security_code: { code: string };
-  service_charge_card:undefined;
-  notification: undefined;
+// Passed straight from TransactionList.tsx's already-normalized item, rather
+// than re-fetched by id, since /wallet/transactions is a list endpoint with
+// no confirmed single-transaction GET route to refetch from. `raw*` fields
+// carry full-precision/untruncated data the list view intentionally
+// abbreviates (short reference, compact date, formatted amount string).
+export type TransactionDetailParams = {
+  id: string;
+  name: string;
+  amount: string;
+  rawAmount: number;
+  direction: 'credit' | 'debit';
+  status: 'successful' | 'pending' | 'failed' | null;
+  reference: string;
+  rawCreatedAt: string | null;
+  method: string | null;
 };
 
 export type ResidentStackParamList = {
   resident_home: { shortAddress: string; firstName?: string };
-  awaiting_approval: { estateName: string };
   pending: undefined;
   credit: undefined;
   notification: undefined;
@@ -28,46 +36,27 @@ export type ResidentStackParamList = {
   };
   visitor_history_list: undefined;
   visitor_history_detail: { visit_id: number };
+  transaction_detail: TransactionDetailParams;
   resident_profile: undefined;
   resident_change_password: undefined;
   booking_cancel: undefined;
   report_issues: undefined;
 };
 
-export type SecurityStackParamList ={
-  security_home: undefined;
-  visit_details: {
-    code: string;
-    visitor: {
-      id: number;
-      visitor_name: string;
-      visitor_phone: string;
-      house_address: string;
-      start_time: string;
-      end_time: string;
-      time_left: string;
-      status: string;
-      approval_status: string;
-      comment?: string | null;
-      departure_confirmed?: boolean;
-    };
-  }
-}
-
 export type RootStackParamList = {
-  // Onboarding/Auth
-  OnboardingScreen: undefined;
-  introslider: { role: 'resident' | 'admin' | 'security' };
+  // Intro/Auth. This app is resident-only, so there is no role to pick and no
+  // admin/security auth route - security ships as its own app and facility
+  // managers use the web admin.
+  introslider: undefined;
   resident_auth: undefined;
-  admin_auth: undefined;
-  security_auth: undefined;
-  forget_password: { role: 'resident' | 'admin' };
-  verify_otp: { role: 'resident' | 'admin'; email: string };
-  reset_password: { role: 'resident' | 'admin'; email: string; resetToken: string };
+  // Reachable only from resident_auth, before login() is ever called (an
+  // unapproved resident never becomes isAuthenticated) - so this must live
+  // on the unauthenticated stack, not inside ResidentApp's Drawer/Stack.
+  awaiting_approval: { estateName: string };
+  forget_password: undefined;
+  verify_otp: { email: string };
+  reset_password: { email: string; resetToken: string };
   legal_document: { document: 'terms' | 'privacy' };
 
-  // Role-based navigators
-  AdminApp: NavigatorScreenParams<AdminStackParamList>;
   ResidentApp: NavigatorScreenParams<ResidentStackParamList>;
-  SecurityApp: NavigatorScreenParams<SecurityStackParamList>;
 };

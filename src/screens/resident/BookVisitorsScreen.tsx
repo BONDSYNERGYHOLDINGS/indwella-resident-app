@@ -26,6 +26,31 @@ interface VisitorHistoryItem {
   status: 'Active' | 'Time up';
 }
 
+// A cold Render backend can take 30-60s+ to answer the first request after
+// idling - longer than apiClient.ts's already-raised 60s timeout covers on a
+// slow wake-up. Retrying once after a short delay almost always succeeds
+// because the backend has finished waking up by then. Mirrors
+// indwella-admin-web/src/app/login/page.tsx's withColdStartRetry - see
+// docs/AUTHENTICATION.md, "Login timeouts on Render cold starts."
+function isLikelyColdStartError(err: any): boolean {
+  if (err?.code === 'ECONNABORTED') return true;
+  const status = err?.response?.status;
+  return typeof status === 'number' && status >= 500;
+}
+
+const COLD_START_RETRY_DELAY_MS = 1500;
+
+async function withColdStartRetry<T>(fn: () => Promise<T>, onRetry: () => void): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (!isLikelyColdStartError(err)) throw err;
+    onRetry();
+    await new Promise((resolve) => setTimeout(resolve, COLD_START_RETRY_DELAY_MS));
+    return fn();
+  }
+}
+
 export default function BookVisitorScreen() {
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -33,6 +58,8 @@ export default function BookVisitorScreen() {
   const { getToken } = useAuth();
   const [name, setName] = useState(route.params?.name || '');
   const [phone, setPhone] = useState(route.params?.phone || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [visitorsCount, setVisitorsCount] = useState('1');
   const [isRepeating, setIsRepeating] = useState(false);
   const [comments, setComments] = useState('');
@@ -187,18 +214,23 @@ export default function BookVisitorScreen() {
   };
 
 
+    setSubmitting(true);
+    setRetrying(false);
     try {
       const token = await getToken();
       if (!token) {
         throw new Error('Login session expired. Please log in again.');
       }
 
-      const res = await api.post('/resident/book-visitor', payload, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-
-  },
-});
+      const res = await withColdStartRetry(
+        () =>
+          api.post('/resident/book-visitor', payload, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        () => setRetrying(true),
+      );
 const visitorId = res.data?.visitor_id;
 
 if(!visitorId){
@@ -236,13 +268,40 @@ if(!visitorId){
       setShowBookingForm(false);
       fetchVisitorHistory();
     } catch (error: any) {
- const message = error.response?.data?.message;
-  Alert.alert(
-    'Error',
-    Array.isArray(message) ? message.join('\n') : message || 'Failed to book visitor.'
-  );
-}
+      // Was reading only error.response?.data?.message - this backend (like
+      // every other endpoint in this app, see fetchVisitorHistory above)
+      // returns errors under `detail`, not `message`, so almost every real
+      // failure fell through to the generic "Failed to book visitor." with
+      // no actual reason. `detail` is also a Pydantic array of
+      // { msg, loc, ... } objects on a 422 (e.g. an invalid time range),
+      // not a plain string - handled below instead of assuming a string.
+      const detail = error?.response?.data?.detail;
+      const responseMessage = error?.response?.data?.message;
 
+      let message: string | undefined;
+      if (typeof detail === 'string' && detail) {
+        message = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        message = detail
+          .map((item: any) => (typeof item === 'string' ? item : item?.msg))
+          .filter(Boolean)
+          .join('\n');
+      } else if (typeof responseMessage === 'string' && responseMessage) {
+        message = responseMessage;
+      } else if (Array.isArray(responseMessage) && responseMessage.length > 0) {
+        message = responseMessage.filter((m: any) => typeof m === 'string').join('\n');
+      } else if (!error?.response && error?.message) {
+        // No HTTP response at all (network failure, timeout) - error.message
+        // is meaningful here, unlike axios's generic "Request failed with
+        // status code 500" when there IS a response but no detail/message.
+        message = error.message;
+      }
+
+      Alert.alert('Error', message || 'Failed to book visitor.');
+    } finally {
+      setSubmitting(false);
+      setRetrying(false);
+    }
   };
 
 //   const handleBooking = () => {
@@ -418,8 +477,13 @@ if(!visitorId){
                   placeholderTextColor="gray"
                 />
 
-                <TouchableOpacity style={styles.button} onPress={handleBookVisitor}>
-                  <Text style={styles.buttonText}>Book Visit</Text>
+                <TouchableOpacity
+                  style={[styles.button, submitting && { opacity: 0.6 }]}
+                  onPress={handleBookVisitor}
+                  disabled={submitting}>
+                  <Text style={styles.buttonText}>
+                    {retrying ? 'Server is waking up, retrying…' : submitting ? 'Booking…' : 'Book Visit'}
+                  </Text>
                 </TouchableOpacity>
               </>
             ) : (
