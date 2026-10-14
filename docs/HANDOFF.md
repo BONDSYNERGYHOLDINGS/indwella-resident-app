@@ -31,6 +31,18 @@ app.
 - `src/components/AdCarousel.tsx` line 46 had a stray `jo` token —
   `ref={flatListRef}jo` — which was invalid JSX and failed `tsc`. Removed;
   the file now type-checks.
+- `@indwella/sdk` is now a **private git dependency**
+  (`git+https://github.com/BONDSYNERGYHOLDINGS/indwella-sdk.git#main`), not
+  a sibling `file:../indwella-sdk` path — the latter only ever worked when
+  this app happened to be checked out next to the SDK repo, which broke the
+  admin-web Netlify deploy outright the first time it was tried from an
+  isolated checkout. This app doesn't have hosted CI today, so nothing to
+  configure yet, but if that changes, see
+  `../indwella-sdk/docs/HANDOFF.md` → "Dependency model" and
+  `../indwella-admin-web/docs/HANDOFF.md` (item 6) for the private-repo CI
+  auth pattern (`scripts/ci-git-auth.js` + a `SDK_GIT_TOKEN` env var) —
+  already wired up here as a no-op `preinstall` script, ready for when a
+  hosted CI needs it.
 
 ## Limitations worth knowing before extending this app
 
@@ -59,15 +71,24 @@ app.
 
 ## Suggested next steps, app-specific
 
-1. Decide whether to build the Electricity and License Fee screens (backend/
-   SDK-ready) — see `FEATURES.md` and `../DATA-MODEL.md` for the full
-   contract each would need to implement against.
+1. Electricity purchase + history are now built (`ElectricityScreen.tsx`,
+   `ElectricityHistoryScreen.tsx`) — decide whether to build the remaining
+   backend/SDK-ready screen, License Fee payment
+   (`residentApi.getLicenseFeeOutstanding` / `payLicenseFee`). See
+   `FEATURES.md` and `../DATA-MODEL.md` for the contract.
 2. Add single-charge payment UI alongside the existing pay-all button on the
    Pending Charges screen, using the already-typed
    `residentApi.payServiceCharge(chargeId)`.
 3. Consider migrating screens to the typed `residentApi`/`walletApi`
    methods incrementally, starting with the money-moving ones (wallet
    funding, service charge payment) where a silent shape mismatch has the
-   highest cost.
-4. Deduplicate `cleanPhoneNumber` into a shared util if a third call site
+   highest cost. `ElectricityScreen.tsx`/`ElectricityHistoryScreen.tsx` are
+   the reference to copy — they're the one feature already written this way.
+4. Reconcile the idempotency-key duplication: `ElectricityScreen.tsx` uses
+   the SDK's `generateIdempotencyKey()` directly, while
+   `CreditWalletScreen.tsx` has its own local `buildIdempotencyKey()`
+   reimplementing the same idea (see its own note in `FEATURES.md` → Fund
+   Wallet). Not a bug, but worth collapsing to one implementation next time
+   either screen is touched.
+5. Deduplicate `cleanPhoneNumber` into a shared util if a third call site
    ever needs it.

@@ -41,6 +41,9 @@ export type ResidentStackParamList = {
   resident_change_password: undefined;
   booking_cancel: undefined;
   report_issues: undefined;
+  electricity: undefined;
+  electricity_history: undefined;
+
 };
 
 export type RootStackParamList = {

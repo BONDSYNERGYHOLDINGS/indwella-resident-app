@@ -27,9 +27,8 @@ wallet funding, issue reporting, and notifications.
 ## Quick start
 
 ```bash
-cd indwella-sdk && yarn install && yarn build   # SDK must be built first
-cd ../indwella-resident-app
-yarn install
+yarn install               # also builds @indwella/sdk automatically (private
+                            # git dependency, self-builds via its own "prepare" script)
 cp .env.example .env      # leave API_BASE_URL commented out for simulator work — apiClient.ts
                             # already falls back to the right host per platform; see the file's comments
 yarn start                  # Metro bundler
@@ -47,11 +46,14 @@ profile edit/photo/delete, change password, forgot-password/OTP/reset, book/
 edit/cancel visitors with device-contact picker and native share of the
 access code, visitor history, view + bulk-pay unpaid service charges, fund
 wallet via an in-app Paystack WebView checkout, view wallet transaction
-history, report an issue with a photo, notifications inbox, push
-notification registration (FCM).
+history and per-transaction detail, buy electricity against a meter number
+(with status polling and purchase history), report an issue with a photo,
+notifications inbox, push notification registration (FCM).
 
 Visible in the UI but explicitly stubbed as "Coming Soon": Dashboard, Panic,
-Electricity purchase, Bills & Utilities. Not visible in the UI at all despite
-full backend/SDK support: license fee payment, single (non-bulk)
-service-charge payment. See [`../FEATURE-MATRIX.md`](../FEATURE-MATRIX.md)
-for the full status table.
+Bills & Utilities. Not visible in the UI at all despite full backend/SDK
+support: license fee payment, single (non-bulk) service-charge payment. See
+[`../FEATURE-MATRIX.md`](../FEATURE-MATRIX.md) for the full status table (note:
+the workspace-level matrix predates the Electricity screens shipping in this
+app — treat this file's `FEATURES.md` as the current source of truth for this
+app pending that matrix being refreshed).

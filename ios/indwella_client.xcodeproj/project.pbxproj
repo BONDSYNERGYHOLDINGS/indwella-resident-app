@@ -11,7 +11,9 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		5E5EB79B9B338182232CA117 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		7D1DDFF95ACB4ABCA3821B16 /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9CFC208130D24D4D8C7A24B8 /* BootSplash.storyboard */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		866DCF594FBD48CE92AA9725 /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 326907B3FD89496495469B01 /* Colors.xcassets */; };
 		A1B2C3D4E5F60718293A4B5C /* PhoneContactPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5E /* PhoneContactPicker.swift */; };
 		A1B2C3D4E5F60718293A4B5D /* PhoneContactPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5F /* PhoneContactPicker.m */; };
 /* End PBXBuildFile section */
@@ -21,11 +23,13 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = indwella_client/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = indwella_client/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = indwella_client/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		326907B3FD89496495469B01 /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = indwella_client/Colors.xcassets; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-indwella_client.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-indwella_client.debug.xcconfig"; path = "Target Support Files/Pods-indwella_client/Pods-indwella_client.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-indwella_client.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-indwella_client.release.xcconfig"; path = "Target Support Files/Pods-indwella_client/Pods-indwella_client.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-indwella_client.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-indwella_client.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = indwella_client/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = indwella_client/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		9CFC208130D24D4D8C7A24B8 /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = indwella_client/BootSplash.storyboard; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5E /* PhoneContactPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PhoneContactPicker.swift; path = indwella_client/PhoneContactPicker.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5F /* PhoneContactPicker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PhoneContactPicker.m; path = indwella_client/PhoneContactPicker.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -53,6 +57,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				9CFC208130D24D4D8C7A24B8 /* BootSplash.storyboard */,
+				326907B3FD89496495469B01 /* Colors.xcassets */,
 			);
 			name = indwella_client;
 			sourceTree = "<group>";
@@ -168,6 +174,8 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				5E5EB79B9B338182232CA117 /* PrivacyInfo.xcprivacy in Resources */,
+				7D1DDFF95ACB4ABCA3821B16 /* BootSplash.storyboard in Resources */,
+				866DCF594FBD48CE92AA9725 /* Colors.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

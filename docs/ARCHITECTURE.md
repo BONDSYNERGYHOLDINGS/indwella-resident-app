@@ -25,7 +25,9 @@ indwella-resident-app/
 │   ├── screens/
 │   │   ├── IntroSliderScreen.tsx    # Resident-only slide deck; first screen shown, no role picker
 │   │   ├── auth/ForgotPasswordScreen.tsx, OtpVerificationScreen.tsx, ResetPasswordScreen.tsx
-│   │   └── resident/                # Every authenticated + resident-auth screen (see NAVIGATION.md)
+│   │   └── resident/                # Every authenticated + resident-auth screen (see NAVIGATION.md),
+│   │                                #   including ElectricityScreen.tsx / ElectricityHistoryScreen.tsx
+│   │                                #   and TransactionDetailScreen.tsx
 │   ├── services/
 │   │   ├── imagePicker.ts          # launchImageLibrary wrapper with a document-picker fallback
 │   │   └── pushNotifications.ts    # FCM token lifecycle + foreground/background handlers

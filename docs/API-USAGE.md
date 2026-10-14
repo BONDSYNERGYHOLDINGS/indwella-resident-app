@@ -1,6 +1,18 @@
 # Resident App — API/SDK Usage
 
-## The dominant pattern: raw axios, not typed SDK methods
+## Exception to the rule: Electricity uses the typed SDK properly
+
+`ElectricityScreen.tsx` and `ElectricityHistoryScreen.tsx` are the one
+feature pair in this app written against the typed `residentApi`/`walletApi`
+methods from the start (`purchaseElectricity`, `getElectricityPurchase`,
+`listElectricityPurchase`, `getBalance`) instead of raw `api.get/post`
+calls — and `ElectricityScreen.tsx` uses the SDK's own
+`generateIdempotencyKey()` (imported directly from `@indwella/sdk`) rather
+than reimplementing it locally, unlike `CreditWalletScreen.tsx`. If you're
+looking for a reference implementation to model a raw-axios screen's
+migration on, start here rather than anywhere else in this app.
+
+## The dominant pattern (everywhere else): raw axios, not typed SDK methods
 
 `src/lib/apiClient.ts` exports both the typed SDK facades (`residentApi`,
 `walletApi`, `authApi`, `passwordResetApi`, `notificationsApi`) **and** the
@@ -42,14 +54,20 @@ don't assume it's load-bearing when refactoring.
 | `ResetPasswordScreen.tsx` | `POST /reset-password` (with `Authorization: Bearer <resetToken>`) | raw `api` |
 | `NotificationScreen.tsx` | `GET /notifications/resident?limit=100`, `POST /notifications/resident/mark-read` | raw `api` |
 | `Navbar.tsx` | `GET /notifications/resident/unread-count` (or admin's, by `userRole` prop) | raw `api` (manual Bearer header) |
-| `AuthContext.tsx` | `authApi.logout()`, `PATCH /resident-profile` (FCM refresh, raw `api`) | **mixed** — the one place `authApi.*` is actually used |
+| `AuthContext.tsx` | `authApi.logout()`, `PATCH /resident-profile` (FCM refresh, raw `api`) | mixed — one of two places `authApi.*`/typed methods are actually used |
+| `ElectricityScreen.tsx` | `GET /wallet/balance`, `POST /resident/electricity/purchase`, `GET /resident/electricity/purchase/{reference}` | **typed** `walletApi`/`residentApi` |
+| `ElectricityHistoryScreen.tsx` | `GET /resident/electricity/purchases` | **typed** `residentApi` |
+| `TransactionDetailScreen.tsx` | none | pure display, driven by navigation params |
 
 ## What is never called
 
-From the full `resident` SDK module (`API-SDK.md`): `getLicenseFeeOutstanding`,
-`payLicenseFee`, `payServiceCharge` (single-charge — only `payAllServiceCharges`
-is used), `purchaseElectricity`, `getElectricityPurchase`. No screen
-references any of these five methods or their routes.
+From the full `resident` SDK module (see the SDK's own `docs/API-REFERENCE.md`):
+`getLicenseFeeOutstanding`, `payLicenseFee`, `payServiceCharge` (single-charge
+— only `payAllServiceCharges` is used). No screen references any of these
+three methods or their routes. (`purchaseElectricity`, `getElectricityPurchase`,
+and `listElectricityPurchase` **are** now called, by the Electricity screens
+above — this list previously included all five as unused, which is now
+stale.)
 
 ## Request/response shapes actually relied on
 

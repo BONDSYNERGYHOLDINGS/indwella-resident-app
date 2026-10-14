@@ -1509,7 +1509,7 @@ PODS:
     - Yoga
   - react-native-randombytes (3.6.2):
     - React-Core
-  - react-native-safe-area-context (5.9.0):
+  - react-native-safe-area-context (5.8.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1524,8 +1524,8 @@ PODS:
     - React-hermes
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.9.0)
-    - react-native-safe-area-context/fabric (= 5.9.0)
+    - react-native-safe-area-context/common (= 5.8.1)
+    - react-native-safe-area-context/fabric (= 5.8.1)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1535,7 +1535,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/common (5.9.0):
+  - react-native-safe-area-context/common (5.8.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1559,7 +1559,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/fabric (5.9.0):
+  - react-native-safe-area-context/fabric (5.8.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1933,6 +1933,30 @@ PODS:
     - React-logger (= 0.79.1)
     - React-perflogger (= 0.79.1)
     - React-utils (= 0.79.1)
+  - RNBootSplash (6.3.12):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNCAsyncStorage (2.2.0):
     - DoubleConversion
     - glog
@@ -2442,6 +2466,7 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios`)
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - RNBootSplash (from `../node_modules/react-native-bootsplash`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
   - "RNCPicker (from `../node_modules/@react-native-picker/picker`)"
@@ -2629,6 +2654,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNBootSplash:
+    :path: "../node_modules/react-native-bootsplash"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNCClipboard:
@@ -2714,7 +2741,7 @@ SPEC CHECKSUMS:
   react-native-image-picker: db0b3e3c7ae57680876318d4f42e7dbedd72244a
   react-native-netinfo: 13eee913178a42d9ee572acfab58843cb56955d9
   react-native-randombytes: 4eeddad82d1fd57adda1cd5beffe67d041c9d6de
-  react-native-safe-area-context: 796b33f092be8851ce62a1402629ecde9a096c2d
+  react-native-safe-area-context: aac284d3cf79604ed760a41734af03772427e5bd
   react-native-tcp-socket: 83a30b5da1deed4c720ee25595737ee851c23339
   react-native-webview: d40f8965e2adf7f36d4ad00543d49e5bfad47179
   React-NativeModulesApple: 8a465be9a58afc56f48c1322331ffbdecd3d4877
@@ -2748,6 +2775,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 642d266e12ef5ea8cb22ca9576df1f4e036258a2
   ReactCodegen: 86758c0e13c6b245ff0cd7123cc5e8910d67546a
   ReactCommon: aa48e4fddbc6a0afa19dca39a1b6016c150b5db4
+  RNBootSplash: 27c7e0ec11fc1555b2846ca95c90785663f4d598
   RNCAsyncStorage: a1c8cc8a99c32de1244a9cf707bf9d83d0de0f71
   RNCClipboard: ea6045252d5c0753cf17f62290f647dc0096f6ac
   RNCPicker: 28c076ae12a1056269ec0305fe35fac3086c477d

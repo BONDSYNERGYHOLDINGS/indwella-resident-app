@@ -26,7 +26,11 @@ Drawer("ResidentApp") (authenticated)
     ├── pending                          pendingChargesScreen — unpaid service charges, pay-all
     ├── credit                           CreditWalletScreen — Paystack WebView checkout
     ├── notification                     NotificationScreen
-    └── report_issues                    ReportIssuesScreen
+    ├── report_issues                    ReportIssuesScreen
+    ├── transaction_detail                TransactionDetailScreen — detail view for one wallet
+    │                                       transaction, opened by tapping a row in TransactionList.tsx
+    ├── electricity                       ElectricityScreen — buy electricity tokens against a meter number
+    └── electricity_history                ElectricityHistoryScreen — past electricity purchases
 ```
 
 The drawer (`ResidentDrawer.tsx`) additionally exposes non-screen actions:
@@ -48,10 +52,29 @@ type ResidentStackParamList = {
                      accessCode: string; startTime: string; endTime: string; visitDate: string };
   visitor_history_list: undefined;
   visitor_history_detail: { visit_id: number };
+  transaction_detail: TransactionDetailParams;   // see below — passed inline, not refetched by id
   resident_profile: undefined;
   resident_change_password: undefined;
   booking_cancel: undefined;    // declared, no screen registered for it — unused
   report_issues: undefined;
+  electricity: undefined;
+  electricity_history: undefined;
+};
+
+// Passed straight from TransactionList.tsx's already-normalized item rather
+// than refetched by id — there is no confirmed single-transaction GET route.
+// `raw*` fields carry full-precision/untruncated data the list view
+// intentionally abbreviates (short reference, compact date, formatted amount).
+type TransactionDetailParams = {
+  id: string;
+  name: string;
+  amount: string;
+  rawAmount: number;
+  direction: 'credit' | 'debit';
+  status: 'successful' | 'pending' | 'failed' | null;
+  reference: string;
+  rawCreatedAt: string | null;
+  method: string | null;
 };
 
 type RootStackParamList = {

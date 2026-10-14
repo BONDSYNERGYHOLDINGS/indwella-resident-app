@@ -14,6 +14,8 @@ import CreditWalletScreen from '../screens/resident/CreditWalletScreen';
 import NotificationScreen from '../screens/resident/NotificationScreen';
 import ReportIssuesScreen from '../screens/resident/ReportIssuesScreen';
 import TransactionDetailScreen from '../screens/resident/TransactionDetailScreen';
+import ElectricityScreen from '../screens/resident/ElectricityScreen';
+import ElectricityHistoryScreen from '../screens/resident/ElectricityHistoryScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +40,9 @@ const ResidentStack = () => {
       <Stack.Screen name="notification" component={NotificationScreen} />
       <Stack.Screen name="report_issues" component={ReportIssuesScreen} />
       <Stack.Screen name="transaction_detail" component={TransactionDetailScreen} />
+            <Stack.Screen name="electricity" component={ElectricityScreen} />
+      <Stack.Screen name="electricity_history" component={ElectricityHistoryScreen} />
+
     </Stack.Navigator>
   );
 };

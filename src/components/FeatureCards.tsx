@@ -99,7 +99,8 @@ const FeatureCards: React.FC = () => {
       iconName: 'flash',
       backgroundColor: '#fffbf0',
       borderColor: '#FFD358',
-      onPress: () => Alert.alert('Coming Soon', 'This feature is under development'),
+      // onPress: () => Alert.alert('Coming Soon', 'This feature is under development'),
+       onPress: () => navigation.navigate('ResidentApp', { screen: 'electricity' }),
     },
     {
       id: '5',

@@ -125,9 +125,62 @@ Every implemented feature, traced UI → SDK/API. Status labels match
 
 - **What it does:** groups transactions into "Wallet top-ups" / "Estate
   payments" / "Other" based on a normalized `method` field, with relative
-  date formatting ("Today, 3:45 PM").
+  date formatting ("Today, 3:45 PM"). Tapping a row navigates to
+  `transaction_detail` with the already-normalized row data passed as params
+  (full amount, status, reference, raw timestamp, method) — the detail
+  screen doesn't refetch anything.
 - **SDK/API:** `GET /wallet/transactions` via raw `api.get`.
 - **Rendered inside:** `Home.tsx` → `FeatureNav.tsx`'s "Payments" tab.
+
+## Transaction Detail — `screens/resident/TransactionDetailScreen.tsx` — Complete
+
+- **What it does:** pure display screen for one wallet transaction — amount
+  with a credit/debit-colored icon and sign, status badge, and a detail card
+  (type, reference, formatted date/time, method if present).
+- **SDK/API:** none — entirely driven by navigation params passed from
+  `TransactionList.tsx` (see `NAVIGATION.md` → `TransactionDetailParams`).
+  There is no confirmed single-transaction `GET` endpoint to refetch from,
+  which is why this screen doesn't independently load data.
+- **Auth requirement:** authenticated resident (reached only from within the
+  authenticated stack).
+
+## Buy Electricity — `screens/resident/ElectricityScreen.tsx` — Complete
+
+- **What it does:** meter-number + amount form with a wallet-balance card up
+  top; on submit, purchases electricity against the resident's wallet
+  balance. If the backend reports an in-progress delivery status
+  (`pending`/`processing`/`initiated`), the screen polls
+  `getElectricityPurchase(reference)` every 3s for up to 10 attempts before
+  giving up and telling the resident to check purchase history instead of
+  claiming failure. Shows the purchase token (tap to copy via
+  `@react-native-clipboard/clipboard`) and unit/amount/meter/reference detail
+  on success; shows a friendly retry prompt on failure.
+- **State:** local `useState`; refetches wallet balance on every focus
+  (`useFocusEffect`).
+- **SDK/API:** `walletApi.getBalance()`, `residentApi.purchaseElectricity(payload,
+  { headers: { 'Idempotency-Key': key } })`, `residentApi.getElectricityPurchase(reference)`
+  — all through the **typed SDK methods**, not raw `api` calls. This is the
+  one money-moving screen in the app that both uses the typed methods *and*
+  the SDK's own `generateIdempotencyKey()` helper (imported directly from
+  `@indwella/sdk`), unlike `CreditWalletScreen.tsx`'s local reimplementation
+  of the same idea — see `HANDOFF.md`.
+- **Auth requirement:** authenticated resident.
+- **Known limitation:** an `INSUFFICIENT_BALANCE` error code or HTTP 402
+  surfaces an inline "Fund Wallet" shortcut into `credit`; any other failure
+  falls back to a generic `Alert.alert` with the backend's `detail` message.
+
+## Electricity Purchase History — `screens/resident/ElectricityHistoryScreen.tsx` — Complete
+
+- **What it does:** list of past electricity purchases with a status badge
+  (Successful/Processing/Failed derived from `delivery_status`/`status`);
+  tapping a row expands it in place to show units, reference, purchase token
+  (tap to copy), and any `error_message`.
+- **SDK/API:** `residentApi.listElectricityPurchase()` — typed SDK method.
+  Defensively accepts either a bare array or a `{ purchases: [...] }`
+  envelope from the backend, since the exact response wrapper isn't
+  independently confirmed (same defensive pattern used for
+  `/resident-PCharges` elsewhere in the app).
+- **Auth requirement:** authenticated resident.
 
 ## Report Issue — `screens/resident/ReportIssuesScreen.tsx` — Complete
 
@@ -204,8 +257,14 @@ missing a step from.
 
 ## Not implemented (stubbed "Coming Soon")
 
-Dashboard, Panic, Electricity, Bills & Utilities — all four are cards in
-`components/FeatureCards.tsx` whose `onPress` is
-`Alert.alert('Coming Soon', 'This feature is under development')`. Electricity
-in particular has full backend/SDK support and no UI at all; see
-`../FEATURE-MATRIX.md` and `../DATA-MODEL.md`.
+Dashboard, Panic, and Bills & Utilities are cards in
+`components/FeatureCards.tsx` whose `onPress` is still
+`Alert.alert('Coming Soon', 'This feature is under development')`.
+Electricity **used to be in this list but no longer is** — its card now
+navigates to the real `electricity` screen (see above). License fee payment
+and single (non-bulk) service-charge payment have full backend/SDK support
+(`residentApi.payLicenseFee`, `residentApi.getLicenseFeeOutstanding`,
+`residentApi.payServiceCharge`) but still have no UI anywhere in this app —
+see `../FEATURE-MATRIX.md` and `../DATA-MODEL.md` (note: that workspace-level
+matrix was written before Electricity shipped and will still list it as
+unbuilt — this file is current, that one needs a refresh).

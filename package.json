@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "preinstall": "node scripts/ci-git-auth.js",
     "preandroid": "node scripts/wait-android-ready.js",
     "android": "react-native run-android",
     "android:raw": "react-native run-android",
@@ -14,7 +15,7 @@
     "generate:types": "openapi-typescript http://127.0.0.1:8000/openapi.json -o types/api.d.ts"
   },
   "dependencies": {
-    "@indwella/sdk": "file:../indwella-sdk",
+    "@indwella/sdk": "git+https://github.com/BONDSYNERGYHOLDINGS/indwella-sdk.git#main",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "8.2.0",
@@ -36,6 +37,7 @@
     "react": "19.0.0",
     "react-native": "0.79.1",
     "react-native-app-intro-slider": "^4.0.4",
+    "react-native-bootsplash": "6.3.12",
     "react-native-contacts": "8.0.4",
     "react-native-country-picker-modal": "^2.0.0",
     "react-native-crypto": "^2.2.0",
